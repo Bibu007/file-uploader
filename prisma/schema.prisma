@@ -1,0 +1,80 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique @db.VarChar(255)
+  password  String   @db.VarChar(255)
+
+  folders   Folder[]
+  files     File[]
+
+  @@map("users")
+}
+
+model Folder {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  userId    Int      @map("user_id")
+  parentId  Int?     @map("parent_id")
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  // Relationship with User
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Self-referencing relationship for nested folders
+  parent    Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children  Folder[] @relation("FolderHierarchy")
+
+  files     File[]
+
+  @@index([userId])
+  @@index([parentId])
+  @@map("folders")
+}
+
+model File {
+  id           Int         @id @default(autoincrement())
+  originalName String      @map("original_name") @db.VarChar(255)
+  storedName   String      @map("stored_name") @db.VarChar(255)
+  folderId     Int?        @map("folder_id")
+  userId       Int         @map("user_id")
+  mimeType     String?     @map("mime_type") @db.VarChar(100)
+  size         BigInt?
+  storagePath  String      @map("storage_path") @db.VarChar(500)
+  uploadedAt   DateTime    @default(now()) @map("uploaded_at") @db.Timestamptz
+
+  user         User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder       Folder?     @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  sharedLinks  SharedLink[]
+
+  @@index([userId])
+  @@index([folderId])
+  @@map("files")
+}
+
+model SharedLink {
+  id        Int      @id @default(autoincrement())
+  fileId    Int      @map("file_id")
+  token     String   @unique @db.VarChar(255)
+  expiresAt DateTime? @map("expires_at") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  file      File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@index([fileId])
+  @@map("shared_links")
+}
+
