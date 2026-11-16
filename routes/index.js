@@ -10,21 +10,69 @@ const userController = require("../controllers/userController");
 //const isMember = require("./authMiddleware").isMember;
 const prisma = require("../lib/prisma.js");
 const upload = require("../upload.js");
+const fs = require("fs/promises");
 
 /**
  * -------------- POST ROUTES ----------------
  */
 
-router.get("/", (req, res) => {
-  res.render("index", { user: req.user });
+router.get("/", async (req, res) => {
+  //res.render("index", { user: req.user });
+  console.log("user");
+  console.log(req.user);
+  if (req.user) {
+    try {
+      const folder = await prisma.folder.findFirst({
+        where: {
+          userId: req.user.id,
+          parentId: null,
+        },
+      });
+
+      if (!folder) {
+        return next(new Error("Root folder not found"));
+      }
+
+      return res.redirect(`/home/${folder.id}`);
+    } catch (error) {
+      console.log(error);
+    }
+  } else {
+    res.render("index", { user: null });
+  }
 });
 
 router.get("/login", (req, res) => {
   res.render("login");
 });
-
+/*
 router.get("/home", (req, res) => {
   res.render("home");
+});
+*/
+
+router.get("/home", async (req, res) => {
+  //res.render("index", { user: req.user });
+  if (req.user) {
+    try {
+      const folder = await prisma.folder.findFirst({
+        where: {
+          userId: user.id,
+          parentId: null,
+        },
+      });
+
+      if (!folder) {
+        return next(new Error("Root folder not found"));
+      }
+
+      return res.redirect(`/home/${folder.id}`);
+    } catch (error) {
+      return next(error);
+    }
+  } else {
+    res.render("index", { user: null });
+  }
 });
 
 router.get("/sign-up", (req, res, next) => {
@@ -136,7 +184,18 @@ router.get("/home/:id", async (req, res, next) => {
 
   console.log(folder);
 
-  res.render("home", { folder: folder, user: req.user });
+  let parent = null;
+
+  if (folder.parentId) {
+    parent = await prisma.folder.findUnique({
+      where: {
+        id: folder.parentId,
+      },
+    });
+    //parentName = parent.name;
+  }
+
+  res.render("home", { folder: folder, user: req.user, parent });
 });
 
 router.post("/upload", upload.single("file"), async (req, res, next) => {
@@ -175,6 +234,51 @@ router.get("/download/:id", async (req, res, next) => {
     }
 
     res.download(file.storagePath, file.storedName);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/delete/:folderId/:id", async (req, res, next) => {
+  try {
+    const file = await prisma.file.findUnique({
+      where: {
+        id: Number(req.params.id),
+      },
+    });
+
+    if (!file) {
+      return res.status(404).send("File not found");
+    }
+
+    await fs.unlink(file.storagePath);
+
+    await prisma.file.delete({
+      where: {
+        id: file.id,
+      },
+    });
+
+    res.redirect(`/home/${req.params.folderId}`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/create", async (req, res, next) => {
+  try {
+    const folder = await prisma.folder.create({
+      data: {
+        name: req.body.name,
+        userId: req.user.id,
+        parentId: Number(req.body.parent),
+      },
+    });
+
+    console.log("Folder");
+    console.log(req.body);
+
+    res.redirect(`/home/${folder.id}`);
   } catch (err) {
     next(err);
   }

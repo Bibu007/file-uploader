@@ -4,7 +4,12 @@
   <body>
     <%- include ('./partials/header.ejs') %>
     <div class="main-container">
-    <div class="folder-title"><p>My Store</p><div class="new-btn-container"><button class="add-file">Add File</button><button class="add-folder">Add Folder</button></div></div>
+    <div class="folder-title"><% if(parent) {%>
+        <p><a href="/home/<%= parent.id %>"><%= parent.name %></a> > <%= folder.name %></p>
+        <%} else {%>
+            <p><%= user.username %>'s Store</p>
+        <% } %>
+        <div class="new-btn-container"><button class="add-file">Add File</button><button class="add-folder">Add Folder</button></div></div>
     <div class="folder-container">
         <div class="file-container">
             <div class="file-title title-design" >Name</div>
@@ -17,10 +22,10 @@
         <% if(folder.children.length > 0){ %>
             <% folder.children.forEach((child) => { %>
                 <div class="file-container">
-                    <div class="file-title">
-                        <a href="/home/<%= child.id %>"><%= child.name %></a>
+                    <div class="file-title ">
+                        <div class="sub-folder-container"><svg class="icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>folder</title><path d="M10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8C22,6.89 21.1,6 20,6H12L10,4Z" /></svg><a href="/home/<%= child.id %>" class="children"><%= child.name %></a>
                     </div>
-                    
+                    </div> 
                 </div>
                 <% }); %>
                 <% } %>
@@ -32,8 +37,8 @@
                     </div>
                     <div class="file-btn-container">
                         <a href="" title="share" class="icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>share</title><path d="M21,12L14,5V9C7,10 4,15 3,20C5.5,16.5 9,14.9 14,14.9V19L21,12Z" /></svg></a>
-                        <a href="" title="download" class="icon delete" ><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>delete</title><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg></a>
-                        <a href="/download/<%= file.id %>" title="delete" class="icon download"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" /></svg></a>
+                        <a href="/delete/<%= folder.id %>/<%= file.id %>" title="delete" class="icon delete" ><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>delete</title><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z" /></svg></a>
+                        <a href="/download/<%= file.id %>" title="download" class="icon download"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>download</title><path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z" /></svg></a>
                     </div>
                 </div>
                 <% }); %>
@@ -61,8 +66,9 @@
                 </form>
         </dialog>
         <dialog class="folder-upload">
-                <h3>Upload a file</h3>
+                <h3>Add a folder</h3>
                 <form action="/create" method="POST" class="dialog-form">
+                <input type="text" name="parent" id="parent" value="<%= folder.id %>" hidden>
                 <label for="title">Name of the folder: </label>
                 <input id="name" class="post-title" name="name" type="text" required>
                 <div class="dialog-btn-container">
