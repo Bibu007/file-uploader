@@ -15,10 +15,9 @@ const customFields = {
 
 const verifyCallback = async (username, password, done) => {
   try {
-    const { rows } = await prisma.user.findUnique({
-      where: { username: username },
+    const user = await prisma.user.findUnique({
+      where: { username },
     });
-    const user = rows;
 
     if (!user) {
       return done(null, false, { message: "Incorrect username" });
@@ -49,10 +48,10 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const { rows } = await prisma.user.findUnique({
-      where: { username: username },
+    const user = await prisma.user.findUnique({
+      where: { id },
     });
-    const user = rows[0];
+    //const user = rows[0];
 
     done(null, user);
   } catch (err) {

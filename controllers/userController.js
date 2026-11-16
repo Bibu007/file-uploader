@@ -35,6 +35,7 @@ exports.addUser = [
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
+        console.log(errors);
         return res.status(400).render("sign-up", {
           errors: errors.array(),
           success: false,
@@ -50,11 +51,19 @@ exports.addUser = [
       console.log(result);
 
       if (result !== null) {
-        return res.status(409).send("Username already exists");
+        return res.status(409).render("sign-up", {
+          errors: [{ msg: "Username already exists" }],
+          success: false,
+          fail: false,
+        });
       }
 
       if (req.body.confirm !== req.body.password) {
-        return res.status(409).send("Passwords do no match");
+        return res.status(409).render("sign-up", {
+          errors: [{ msg: "Passwords do not match" }],
+          success: false,
+          fail: false,
+        });
       }
 
       let admin = false;
@@ -65,10 +74,21 @@ exports.addUser = [
 
       const hashedPassword = await bcrypt.hash(req.body.password, 10);
 
-      await prisma.user.create({
+      const user = await prisma.user.create({
         data: {
           username: req.body.username,
           password: hashedPassword,
+        },
+      });
+
+      const folder = await prisma.folder.create({
+        data: {
+          name: req.body.username,
+          user: {
+            connect: {
+              id: user.id,
+            },
+          },
         },
       });
 

@@ -9,17 +9,22 @@ const userController = require("../controllers/userController");
 //const isAdmin = require("./authMiddleware").isAdmin;
 //const isMember = require("./authMiddleware").isMember;
 const prisma = require("../lib/prisma.js");
+const upload = require("../upload.js");
 
 /**
  * -------------- POST ROUTES ----------------
  */
 
 router.get("/", (req, res) => {
-  res.render("index");
+  res.render("index", { user: req.user });
 });
 
 router.get("/login", (req, res) => {
   res.render("login");
+});
+
+router.get("/home", (req, res) => {
+  res.render("home");
 });
 
 router.get("/sign-up", (req, res, next) => {
@@ -42,7 +47,7 @@ router.post(
   }),
 );
 */
-
+/*
 router.post(
   "/log-in",
   (req, res, next) => {
@@ -56,9 +61,123 @@ router.post(
     failureMessage: true,
   }),
 );
+*/
+router.post(
+  "/log-in",
+  (req, res, next) => {
+    console.log("Login route reached");
+    console.log("Request body:", req.body);
+    next();
+  },
+  (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) {
+        return next(err);
+      }
+
+      if (!user) {
+        return res.redirect("/login-failed");
+      }
+
+      // Manually establish the login session
+      req.logIn(user, async (err) => {
+        if (err) {
+          return next(err);
+        }
+
+        try {
+          const folder = await prisma.folder.findFirst({
+            where: {
+              userId: user.id,
+              parentId: null,
+            },
+          });
+
+          if (!folder) {
+            return next(new Error("Root folder not found"));
+          }
+
+          return res.redirect(`/home/${folder.id}`);
+        } catch (error) {
+          return next(error);
+        }
+      });
+
+      // Successful login
+      //return res.redirect(`/home/${folder.id}`);
+    })(req, res, next);
+  },
+);
 
 router.get("/login-failed", (req, res, next) => {
   res.render("login-failed");
+});
+
+router.get("/logout", (req, res, next) => {
+  req.logout((err) => {
+    if (err) {
+      return next(err);
+    }
+
+    res.redirect("/login");
+  });
+});
+
+router.get("/home/:id", async (req, res, next) => {
+  const folder = await prisma.folder.findUnique({
+    where: {
+      id: Number(req.params.id),
+    },
+    include: {
+      files: true,
+      children: true,
+    },
+  });
+
+  console.log(folder);
+
+  res.render("home", { folder: folder, user: req.user });
+});
+
+router.post("/upload", upload.single("file"), async (req, res, next) => {
+  try {
+    const file = req.file;
+    console.log(req.body);
+    console.log(file);
+    await prisma.file.create({
+      data: {
+        originalName: file.originalname,
+        storedName: req.body.name,
+        size: file.size,
+        mimeType: file.mimetype,
+        storagePath: file.path,
+        folderId: Number(req.body.folderId),
+        userId: req.user.id,
+      },
+    });
+
+    res.redirect(`/home/${req.body.folderId}`);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.get("/download/:id", async (req, res, next) => {
+  try {
+    const file = await prisma.file.findUnique({
+      where: {
+        id: Number(req.params.id),
+      },
+    });
+
+    if (!file) {
+      return res.status(404).send("File not found");
+    }
+
+    res.download(file.storagePath, file.storedName);
+  } catch (err) {
+    next(err);
+  }
 });
 
 module.exports = router;
