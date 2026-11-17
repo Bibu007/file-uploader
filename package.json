@@ -4,7 +4,10 @@
   "description": "Google Drive clone that allows users to store and share files online. Built using Express, PassportJS and Prisma ORM.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "prisma7 generate",
+    "start": "node app.js",
+    "postinstall": "npx prisma generate"
   },
   "repository": {
     "type": "git",
