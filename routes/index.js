@@ -182,6 +182,12 @@ router.get("/home/:id", async (req, res, next) => {
     },
   });
 
+  if (folder.userId !== req.user.id) {
+    return res
+      .status(401)
+      .json({ msg: "You are not authorized to view this resource" });
+  }
+
   console.log(folder);
 
   let parent = null;

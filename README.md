@@ -32,3 +32,20 @@ Self note:
     });
     })(req, res, next);
     First one is the easier one, but you'll only be able to redirect to a page and you cannot pass any parameters. In the second one you can define the callback but it's little difficult to understand.
+    4. Render deploy fix
+
+       In schema.prisma:
+       generator client {
+       provider = "prisma-client-js"
+       }
+
+       lib/prisma.js:
+       require("dotenv").config();
+       const { PrismaPg } = require("@prisma/adapter-pg");
+       const { PrismaClient } = require("@prisma/client");
+
+       const connectionString = `${process.env.DATABASE_URL}`;
+       const adapter = new PrismaPg({ connectionString });
+       const prisma = new PrismaClient({ adapter });
+
+       module.exports = prisma;

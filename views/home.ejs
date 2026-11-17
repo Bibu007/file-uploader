@@ -5,7 +5,7 @@
     <%- include ('./partials/header.ejs') %>
     <div class="main-container">
     <div class="folder-title"><% if(parent) {%>
-        <p><a href="/home/<%= parent.id %>"><%= parent.name %></a> > <%= folder.name %></p>
+        <p><a href="/home/<%= parent.id %>"><%= parent.name %>'s Store</a> > <%= folder.name %></p>
         <%} else {%>
             <p><%= user.username %>'s Store</p>
         <% } %>
